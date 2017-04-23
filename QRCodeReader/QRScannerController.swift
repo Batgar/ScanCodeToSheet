@@ -88,8 +88,15 @@ class QRScannerController: UIViewController, AVCaptureMetadataOutputObjectsDeleg
         // Dispose of any resources that can be recreated.
     }
     
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        processingUPCCodeAgainstSheet = false
+    }
+    
 
     // MARK: - AVCaptureMetadataOutputObjectsDelegate Methods
+    
+    var processingUPCCodeAgainstSheet = false
     
     func captureOutput(_ captureOutput: AVCaptureOutput!, didOutputMetadataObjects metadataObjects: [Any]!, from connection: AVCaptureConnection!) {
         
@@ -109,8 +116,31 @@ class QRScannerController: UIViewController, AVCaptureMetadataOutputObjectsDeleg
             qrCodeFrameView?.frame = barCodeObject!.bounds
             
             if metadataObj.stringValue != nil {
-                messageLabel.text = metadataObj.stringValue
+                
+                
+                if (/*metadataObj.type == AVMetadataObjectTypeEAN13Code &&*/
+                    !processingUPCCodeAgainstSheet) {
+                    processingUPCCodeAgainstSheet = true
+                    
+                    messageLabel.text = metadataObj.stringValue
+                    
+                    //Take the string value, and look it up in a Google Sheet....
+                    DispatchQueue.main.async{
+                        //Try to process the code against a Google Sheet an zap to the row if it exists, if not, then bail.
+                        
+                        //If we navigate away from the controller then stop processing the camera output.
+                        self.performSegue(withIdentifier: "processUPCCode", sender: self)
+                    }
+                    
+                }
             }
+        }
+    }
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if let processUPCController = segue.destination as? ProcessUPCViewController,
+            segue.identifier == "processUPCCode" {
+            processUPCController.discoveredUPCCode = messageLabel.text
         }
     }
 

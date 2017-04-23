@@ -7,6 +7,9 @@
 //
 
 import UIKit
+import GoogleAPIClientForREST
+//import AppAuth
+import GTMAppAuth
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -16,6 +19,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        
+        setup()
+        
         return true
     }
 
@@ -39,6 +45,28 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func applicationWillTerminate(_ application: UIApplication) {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+    }
+    
+    public let googleSheetsService = GTLRSheetsService()
+    
+    
+    func setup() {
+        let googleAuthorizer = GAuthorizer.shared
+        googleAuthorizer.addScope(kGTLRAuthScopeSheetsSpreadsheets)
+        // (kGTLAuthScopeDriveFile is defined in GTLDriveConstants.h)
+        googleAuthorizer.loadState()
+        // (loadState() may actually find the authorization there already, so the following makes
+        //  sense, but may still result in a service.authorizer value of nil.)
+        googleSheetsService.authorizer = googleAuthorizer.authorization
+    }
+    
+    func application(_ app: UIApplication, open url: URL, options: [UIApplicationOpenURLOptionsKey:Any]) -> Bool {
+        if GAuthorizer.shared.continueAuthorization(with: url) {
+            return true
+        }
+        
+        // (There will be other callback checks here for the likes of Dropbox etc...)
+        return false
     }
 
 
